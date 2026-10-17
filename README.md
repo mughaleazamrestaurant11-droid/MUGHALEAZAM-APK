@@ -33,11 +33,11 @@ settings, no stock editing — the boss does those at the till.
 
 You never install Gradle or Android Studio.
 
-1. Put this folder on GitHub (see *Before you push* below).
+1. Push this repository to GitHub (see *Before you push* below).
 2. Open the repository → **Actions** → **Build Android APK**.
 3. GitHub builds it on its own computer. When the run turns green, open
    **Artifacts** at the bottom of the run page and download
-   `waiter-app-apk`.
+   `MUGHAL-E-AZAM-waiter-app`.
 4. Copy the `.apk` to the phone and install it. You may need to allow
    "install from unknown sources" — the file is not from the Play Store.
 
@@ -103,17 +103,27 @@ stand in for a compile, and both pass:
 
 | Check | What it proves |
 |---|---|
-| `tools/mobile_static_check.py` | Every screen, id, word, picture, colour and style the Kotlin references actually exists; braces balance; the manifest names real screens. It has its own self-test and was checked against a deliberately broken file. |
-| `tools/mobile_contract_test.py` | **44 checks, 0 failed.** Every call the app makes, with the app's own payloads, against a *scratch copy* of the real database: discovery, login, tables, menu, the live socket, `order.create`, `order.save`, `order.kot`, the busy-table path, and that not one existing row changed. |
+| `tools/check_resources.py` — **in this repository, and the first thing the workflow runs** | Every screen, id, word, picture, colour and style the Kotlin references actually exists; braces balance; the manifest names real screens; the build file's namespace and JVM level agree with the code. It has its own self-test and was checked against a deliberately broken file. |
+| `tools/mobile_contract_test.py` — *in the parent till project, not in this repo* | **44 checks, 0 failed.** Every call the app makes, with the app's own payloads, against a *scratch copy* of the real database: discovery, login, tables, menu, the live socket, `order.create`, `order.save`, `order.kot`, the busy-table path, and that not one existing row changed. |
+
+The first one ships with the app because it needs nothing but Python, so it
+runs before Gradle and fails in about a second with a message you can act on
+rather than a wall of build text. The second needs the restaurant's server, so
+it stays with the till software.
 
 What these cannot catch: anything needing a real device — the screen layout on
 a particular phone, the Wi-Fi scan, how a physical tap feels. Those are
 settled on the first real build and the first phone, not on paper.
 
-Re-run them any time:
+Re-run them any time, from the folder this file is in:
 
 ```
-C:\laragon\bin\python\python-3.10\python.exe tools\mobile_static_check.py
+C:\laragon\bin\python\python-3.10\python.exe tools\check_resources.py
+```
+
+and from the parent till project:
+
+```
 C:\laragon\bin\python\python-3.10\python.exe tools\mobile_contract_test.py
 ```
 
@@ -125,46 +135,54 @@ fingerprint was identical before and after each run.
 
 ## Before you push to GitHub
 
-This folder sits next to the **live restaurant**: the database, every bill,
-the customer list, the staff passwords and the printer settings. Pushing those
-would publish them to anyone who can see the repository.
+This repository contains the app and nothing else — no database, no bills, no
+customer list, no staff passwords, no printer settings. Those live on the main
+PC in the till software and are not part of this repository at all, so they
+cannot be published by pushing here.
 
-`.gitignore` in the project root keeps all of it out of git on purpose — the
-`dist/`, `data/`, `build/` and `build_logs/` folders, the database and the
-machine settings, the built `.exe`, and Python/Android build litter. The code
-still builds and the software still runs; no restaurant data leaves the PC.
+`.gitignore` in this folder keeps the Android build litter out — the `.gradle`
+and `build` folders, `local.properties`, Studio's `.idea`, and any built
+`.apk`. The finished APK is handed to you by the workflow as a download
+instead of being committed, so the repository stays small.
 
-Before your first push, have a look at `git status` and make sure nothing
-under those folders is staged. If the repository is ever made public, change
-the till passwords.
+Before your first push, glance at `git status` and make sure only source files
+are staged. If the repository is ever made public, no restaurant data is at
+risk — but change the till passwords anyway, since the app's login screen shows
+the same user names the tills use.
 
 ---
 
 ## Where things are
 
-```
-mobile/
-  build.gradle.kts        the two plugins, nothing else
-  settings.gradle.kts     where the libraries come from
-  gradle.properties       plain settings, no local paths
-  app/
-    build.gradle.kts      Android 7.0 up, Java 17, OkHttp for the wire
-    src/main/
-      AndroidManifest.xml the four screens, internet only
-      java/com/mughalezam/pos/mobile/
-        PosApp.kt         the one shared connection
-        api/PosApi.kt     HTTP actions + the live socket + Wi-Fi discovery
-        api/Models.kt     the shapes the server sends, and how to read them
-        ui/…              the four screens
-        util/Prefs.kt     the server address and who signed in
-      res/                layouts, words, colours, the gold seal
+This repository is the app. The Kotlin project starts at the top level — there
+is no `mobile/` folder in here, because this folder *is* `mobile`.
 
-.github/workflows/build-apk.yml     builds the APK on every push
-tools/mobile_contract_test.py       the 44 server-contract checks
-tools/mobile_static_check.py        stands in for a compile
+```
+.github/workflows/build-apk.yml   builds the APK on every push
+tools/check_resources.py          stands in for a compile, runs first in CI
+build.gradle.kts                  the two plugins, nothing else
+settings.gradle.kts               where the libraries come from
+gradle.properties                 plain settings, no local paths
+app/
+  build.gradle.kts                Android 7.0 up, Java 17, OkHttp for the wire
+  src/main/
+    AndroidManifest.xml           the four screens, internet only
+    java/com/mughalezam/pos/mobile/
+      PosApp.kt                   the one shared connection
+      api/PosApi.kt               HTTP actions + the live socket + Wi-Fi discovery
+      api/Models.kt               the shapes the server sends, and how to read them
+      ui/…                        the four screens
+      util/Prefs.kt               the server address and who signed in
+    res/                          layouts, words, colours, the gold seal
 ```
 
 **Why classic views instead of Jetpack Compose:** Compose ties the compiler
 version to the Kotlin version and breaks the build when they drift. These
 screens are mostly lists, and the whole point of this project is that the
 build keeps working every time you push.
+
+**Why the Android SDK step names its package:** Google removed an SDK package
+called `tools` in September 2026, and the version of the setup action that was
+installing it by default started failing for every project that used it. The
+workflow says exactly which package it wants so a change on somebody else's
+side cannot break this build without a reason showing up in the log.

@@ -1,25 +1,19 @@
 name: Build Android APK
 
-# Round 25 - the waiter app.
+# The waiter app.  You never install Gradle or Android Studio - push the code
+# and this file builds the APK on GitHub's own computer, then hands it back as
+# a download on the run's page (Actions -> this run -> "MUGHAL-E-AZAM-waiter-app").
 #
-# You never install Gradle or Android Studio.  Push the code and this file
-# builds the APK for you on GitHub's own computer, then hands it back as a
-# download on the run's page (Actions -> this run -> "waiter-app-apk").
+# This repository IS the app: the Kotlin project starts at the top level, so
+# every command below runs from the repository root.  There is no "mobile/"
+# folder in here - that name was the folder it lived in on your computer.
 #
-# The build needs NOTHING from this restaurant: the app talks to the main
-# server over the wi-fi at run time, so the workflow only has to compile
-# Kotlin.  No data folder, no database, no printer is touched.
+# The build needs NOTHING from this restaurant: the app talks to the main PC
+# over the wi-fi at run time, so the workflow only has to compile Kotlin.
+# No database, no printer, no order is touched.
 
 on:
   push:
-    branches: [ main, master ]
-    paths:
-      - 'mobile/**'
-      - '.github/workflows/build-apk.yml'
-  pull_request:
-    paths:
-      - 'mobile/**'
-      - '.github/workflows/build-apk.yml'
   # lets you build by hand: Actions -> Build Android APK -> Run workflow
   workflow_dispatch:
 
@@ -33,42 +27,55 @@ jobs:
       contents: read
 
     steps:
-      - name: Check out the code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # Android's build tools need JDK 17
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      # A stand-in for a compile, run before any of the slow steps.
+      # Most first-build failures are a reference to a screen, an id, a word
+      # or a picture that does not exist - this finds them in a second with a
+      # message you can act on, instead of a wall of Gradle text.
+      - name: Check every screen, id, word and picture exists
+        run: python3 tools/check_resources.py
+
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      # installs the Android SDK command line tools and accepts the licences,
-      # so assembleDebug can download the platform it compiles against
-      - name: Set up the Android SDK
-        uses: android-actions/setup-android@v3
+      # DO NOT "simplify" this to just `setup-android@v3`.
+      #
+      # v3 installs an SDK package literally called `tools`, and Google
+      # REMOVED that package from the SDK repository on 15 September 2026.
+      # So v3 now dies with:
+      #     Warning: Failed to find package 'tools'
+      #     ... sdkmanager failed with exit code 1
+      # before Gradle ever starts.  v4 stopped asking for it.  The package
+      # list below is written out on purpose rather than left to the action's
+      # default, so a future default change cannot break this build silently.
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
 
-      # installs Gradle itself - the reason you do not need it at home
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.6'
 
       - name: Build the APK
-        run: gradle -p mobile assembleDebug --no-daemon --stacktrace
+        run: gradle assembleDebug --no-daemon --stacktrace
 
-      - name: Name the APK
+      # Give the file one clear name, so there is no guessing which of the
+      # generated files to install.  A glob is used because Gradle names the
+      # output app-debug.apk and that name is not worth pinning down.
+      - name: Name the file you will install
         run: |
-          set -e
-          apk="$(ls mobile/app/build/outputs/apk/debug/*.apk | head -n 1)"
-          echo "Built: $apk"
-          cp "$apk" "mobile/app/build/outputs/apk/debug/MUGHAL-E-AZAM-waiter-app.apk"
+          mkdir -p ready
+          cp app/build/outputs/apk/debug/*.apk ready/MUGHAL-E-AZAM-waiter-app.apk
+          ls -l ready
 
-      # this is the download you want: open the run, scroll to "Artifacts"
-      - name: Hand back the APK
-        uses: actions/upload-artifact@v4
+      # The download link: Actions -> this run -> "MUGHL-E-AZAM-waiter-app".
+      # GitHub deletes it after 90 days by default; re-run the workflow to get
+      # a fresh one, it is free.
+      - uses: actions/upload-artifact@v4
         with:
-          name: waiter-app-apk
-          path: mobile/app/build/outputs/apk/debug/MUGHAL-E-AZAM-waiter-app.apk
+          name: MUGHAL-E-AZAM-waiter-app
+          path: ready/MUGHAL-E-AZAM-waiter-app.apk
           if-no-files-found: error
-          retention-days: 30

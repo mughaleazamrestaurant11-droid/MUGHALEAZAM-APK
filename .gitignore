@@ -1,0 +1,18 @@
+# Gradle and Android Studio's own working files.  None of these belong in
+# the repository, and several of them are large.
+
+.gradle/
+build/
+local.properties
+.idea/
+.DS_Store
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.hprof
+
+# The finished APK is handed to you by the workflow as a download, not
+# committed here - a committed binary makes the repository huge and stale.
+ready/
