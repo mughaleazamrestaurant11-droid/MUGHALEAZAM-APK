@@ -1,7 +1,13 @@
 package com.mughalezam.pos.mobile.ui
 
+import android.app.AlertDialog
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
+import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -73,6 +79,12 @@ class OrderActivity : AppCompatActivity(), PosApi.Listener {
     private var categories: List<String> = emptyList()
     private var currentCat: String = ""
 
+    /** What the waiter has typed in the search box. */
+    private var search = ""
+    private lateinit var searchBox: EditText
+    private val searchHandler = Handler(Looper.getMainLooper())
+    private var searchRunnable: Runnable? = null
+
     /** The most recent picture the server sent us. */
     private var lastState: JSONObject? = null
 
@@ -103,10 +115,13 @@ class OrderActivity : AppCompatActivity(), PosApi.Listener {
         cats = findViewById(R.id.orderCats)
         save = findViewById(R.id.orderSave)
         kitchen = findViewById(R.id.orderKitchen)
+        searchBox = findViewById(R.id.orderSearch)
 
         title.text = tableName
         sub.text = getString(R.string.order_empty)
         startedAt = System.currentTimeMillis()
+
+        bindSearch()
 
         cartAdapter = CartAdapter(
             cart,
@@ -142,6 +157,37 @@ class OrderActivity : AppCompatActivity(), PosApi.Listener {
         val api = PosApp.instance.api
         if (api.listener === this) api.listener = null
         super.onPause()
+    }
+
+    override fun onDestroy() {
+        searchRunnable?.let { searchHandler.removeCallbacks(it) }
+        searchRunnable = null
+        super.onDestroy()
+    }
+
+    /* ------------------------------------------------------------ search */
+
+    /**
+     * The till's search box, waiting 150ms before it works.
+     *
+     * The pause is not decoration: filtering the whole menu on every single
+     * keystroke makes the list jump under the waiter's thumb while they are
+     * still typing, which is exactly when they cannot look at it.
+     */
+    private fun bindSearch() {
+        searchBox.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) = Unit
+            override fun afterTextChanged(s: Editable?) {
+                searchRunnable?.let { searchHandler.removeCallbacks(it) }
+                val run = Runnable {
+                    search = s?.toString()?.trim() ?: ""
+                    showMenu()
+                }
+                searchRunnable = run
+                searchHandler.postDelayed(run, SEARCH_DEBOUNCE_MS)
+            }
+        })
     }
 
     /* ------------------------------------------------------------- loading */
@@ -218,17 +264,41 @@ class OrderActivity : AppCompatActivity(), PosApi.Listener {
         }
     }
 
+    /**
+     * Show the dishes that match the category AND the search box.
+     *
+     * Both filters apply at once, exactly as on the till: picking a category
+     * does not throw away what is already typed.
+     */
     private fun showMenu() {
         val state = lastState ?: return
-        items = readItems(state, currentCat)
+        items = readItems(state, currentCat, search)
         menuAdapter.submit(items)
-        emptyText.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
+        if (items.isEmpty()) {
+            emptyText.setText(
+                if (search.isEmpty()) R.string.order_empty else R.string.order_no_match
+            )
+            emptyText.visibility = View.VISIBLE
+        } else {
+            emptyText.visibility = View.GONE
+        }
     }
 
     /* ---------------------------------------------------------- the cart */
 
+    /**
+     * One tap on a dish adds one.
+     *
+     * The merge test is the till's own: the same dish and no note on the
+     * line.  It deliberately does NOT look at what the kitchen already has -
+     * the till does not either, and for the same reason. If the cooks already
+     * have 1 burger and the waiter taps burger again, both screens bump that
+     * line to 2 and the next ticket prints just the +1. A second line for the
+     * same dish would leave the kitchen holding two separate entries for one
+     * table, which is how an order gets cooked twice.
+     */
     private fun addLine(row: MenuRow) {
-        val existing = cart.firstOrNull { it.itemId == row.id && it.note.isEmpty() && it.sentQty <= 0 }
+        val existing = cart.firstOrNull { it.itemId == row.id && it.note.isEmpty() }
         if (existing != null) {
             existing.qty += 1.0
         } else {
@@ -251,36 +321,86 @@ class OrderActivity : AppCompatActivity(), PosApi.Listener {
     }
 
     private fun changeQty(line: CartLine, by: Double) {
-        val next = line.qty + by
-        // never below what the kitchen already has - that would leave the
-        // cooks with food the bill says was cancelled
-        if (next < line.sentQty) {
+        // A line already off the bill cannot go further DOWN - the till
+        // blocks - for exactly the same reason, and says the same thing.
+        //
+        // Note the guard is only on the way down. "+" must still work, or a
+        // line could never be put back - and the message below tells the
+        // waiter to press +, which would be a button that does nothing.
+        if (by < 0 && line.qty <= 0) {
             Toast.makeText(
                 this,
-                "Kitchen already has ${qtyText(line.sentQty)} - undo it at the till",
+                if (line.sentQty > 0) R.string.order_removed_back_kot
+                else R.string.order_removed_back,
                 Toast.LENGTH_SHORT
             ).show()
             return
         }
-        line.qty = next
-        if (line.qty <= 0 && line.sentQty <= 0) cart.remove(line)
+        setQty(line, line.qty + by)
+    }
+
+    /**
+     * Set a line's quantity, and decide what zero means.
+     *
+     * This is the till's own setQty. Zero is not one thing:
+     *
+     *  * the kitchen has never been told  -> the line just goes. Nothing
+     *    printed, nothing to undo, nobody is cooking it.
+     *  * the kitchen already has it       -> the line STAYS on the bill at
+     *    zero, marked in red. The next kitchen ticket prints a minus so the
+     *    cooks take it away, and the stock maths (+1 then -1 = 0) keeps
+     *    matching the food that really left.
+     *
+     * Throwing the line away at that point is the expensive mistake: the bill
+     * says cancelled, the kitchen keeps cooking, and the table is charged for
+     * food nobody sees.
+     */
+    private fun setQty(line: CartLine, qty: Double) {
+        if (qty > 0) {
+            line.qty = qty
+            cartAdapter.submit(cart)
+            paintTotals()
+            return
+        }
+        if (line.sentQty > 0) {
+            confirmRemove(line)
+            return
+        }
+        cart.remove(line)          // never sent - it just goes
         cartAdapter.submit(cart)
         paintTotals()
     }
 
-    private fun removeLine(line: CartLine) {
-        if (line.sentQty > 0) {
-            if (line.qty > line.sentQty) {
-                line.qty = line.sentQty
+    /** The confirmation the till shows before a minus reaches the kitchen. */
+    private fun confirmRemove(line: CartLine) {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.order_remove_title)
+            .setMessage(
+                getString(R.string.order_remove_body, line.name, qtyText(line.sentQty))
+            )
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                line.qty = 0.0
                 cartAdapter.submit(cart)
                 paintTotals()
-            } else {
-                Toast.makeText(
-                    this,
-                    "The kitchen already has this - undo it at the till",
-                    Toast.LENGTH_SHORT
-                ).show()
             }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun removeLine(line: CartLine) {
+        // A live line goes through the same confirmation as "-", so the
+        // kitchen still gets its minus. A line already at zero can only leave
+        // once the cooks have been told about it.
+        if (line.qty > 0) {
+            setQty(line, 0.0)
+            return
+        }
+        if (line.sentQty > 0) {
+            Toast.makeText(
+                this,
+                getString(R.string.order_send_first, qtyText(line.sentQty)),
+                Toast.LENGTH_SHORT
+            ).show()
             return
         }
         cart.remove(line)
@@ -526,5 +646,8 @@ class OrderActivity : AppCompatActivity(), PosApi.Listener {
     companion object {
         const val EXTRA_TABLE_ID = "tableId"
         const val EXTRA_TABLE_NAME = "tableName"
+
+        /** How long the search box waits before it filters the menu. */
+        const val SEARCH_DEBOUNCE_MS = 150L
     }
 }

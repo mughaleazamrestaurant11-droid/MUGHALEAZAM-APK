@@ -36,6 +36,20 @@
             android:maxLines="1"
             android:textColor="@color/text_dim"
             android:textSize="10sp" />
+
+        <!-- the till's own sentence when food comes back off a bill the
+             kitchen already knows about - the ticket prints a minus, so the
+             cooks are told to take it away instead of it vanishing -->
+        <TextView
+            android:id="@+id/lineNote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/red"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
     </LinearLayout>
 
     <TextView

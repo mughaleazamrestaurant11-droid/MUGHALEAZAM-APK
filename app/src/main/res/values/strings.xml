@@ -36,6 +36,22 @@
     <string name="order_cart_empty">No items yet</string>
     <string name="order_note">Note for the chef</string>
 
+    <!-- item search - the same box the till has, over the same menu -->
+    <string name="order_search">Search item or code…</string>
+    <string name="order_no_match">No item matches your search.</string>
+
+    <!-- taking food back off a bill the kitchen already knows about.
+         These are the till's own words: the ticket prints a minus, so the
+         cooks are told to take it away rather than quietly losing it. -->
+    <string name="order_removed_note">REMOVED → the kitchen gets −%1$s on the NEXT KOT</string>
+    <string name="order_removed_now">REMOVED · the kitchen has already been told</string>
+    <string name="order_change_note">CHANGE → the next KOT sends %1$s</string>
+    <string name="order_remove_title">Remove this item?</string>
+    <string name="order_remove_body">%1$s is already in the kitchen (%2$s).\n\nThe next kitchen ticket will print −%2$s so the cooks take it away.</string>
+    <string name="order_removed_back">Already removed - press + to put it back</string>
+    <string name="order_removed_back_kot">Already removed - press + to put it back before the next KOT</string>
+    <string name="order_send_first">Send the KOT first - the kitchen still has to be told (−%1$s)</string>
+
     <!-- offline banner - the phone must never pretend a change was taken -->
     <string name="offline_banner">Main server PC is offline. Nothing is being saved.</string>
     <string name="offline_try">Try now</string>

@@ -82,6 +82,24 @@
             android:paddingEnd="12dp" />
     </HorizontalScrollView>
 
+    <!-- the till's own search box: one tap on the keyboard beats scrolling a
+         long menu while the customer is waiting -->
+    <EditText
+        android:id="@+id/orderSearch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:background="@drawable/field"
+        android:hint="@string/order_search"
+        android:importantForAutofill="no"
+        android:imeOptions="actionSearch"
+        android:inputType="text"
+        android:singleLine="true"
+        android:textColor="@color/text"
+        android:textColorHint="@color/text_dim"
+        android:textSize="14sp" />
+
     <TextView
         android:id="@+id/orderCartHead"
         android:layout_width="match_parent"

@@ -21,8 +21,9 @@ Four screens, and nothing else:
 3. **Tables** — the floor, live. Green is free, red already has an open bill.
    Sections can be filtered across the top.
 4. **Order** — the menu at the bottom, what is already on the bill at the
-   top. Tap to add, `+` / `−` to change, then **Save order** and optionally
-   **Send to kitchen**.
+   top. A **search box** filters the menu as you type (name, code or
+   category — same three fields as the till's box). Tap to add, `+` / `−` to
+   change, then **Save order** and optionally **Send to kitchen**.
 
 That is the whole app, on purpose. There is no money, no reports, no
 settings, no stock editing — the boss does those at the till.
@@ -78,10 +79,20 @@ that is never taken.
 If the waiter taps a table that is already in use, the app joins the bill
 that is already running there. It will not open a second one.
 
-**Food the kitchen already has cannot quietly vanish.**
-A line that has been sent to the kitchen shows it, and cannot be taken below
-what was sent. Undoing food that is cooking is the till's call, not the
-phone's.
+**Taking food back tells the kitchen, out loud.**
+A dish the cooks already have can be taken off the bill from the phone — but
+never quietly. The line stays on screen, struck out and marked in red with
+*"REMOVED → the kitchen gets −1 on the NEXT KOT"*, and the next kitchen
+ticket really does print the minus so the cooks take it off. Only a dish the
+kitchen was never told about simply vanishes. The phone also cannot rewrite
+what the cooks were told: it sends back its own copy of `sentQty`, but the
+server ignores that and stamps its own value.
+
+**The same dish twice is one line.**
+Tapping a dish adds to the line that is already there — even when the kitchen
+already has some of it — exactly as the till does. Two lines for one dish
+would hand the kitchen two separate entries for one table, which is how an
+order gets cooked twice.
 
 **The shop's charges are copied, never re-invented.**
 Service charge, tax and discount come from the server's own order and are
@@ -104,7 +115,7 @@ stand in for a compile, and both pass:
 | Check | What it proves |
 |---|---|
 | `tools/check_resources.py` — **in this repository, and the first thing the workflow runs** | Every screen, id, word, picture, colour and style the Kotlin references actually exists; braces balance; the manifest names real screens; the build file's namespace and JVM level agree with the code. It has its own self-test and was checked against a deliberately broken file. |
-| `tools/mobile_contract_test.py` — *in the parent till project, not in this repo* | **44 checks, 0 failed.** Every call the app makes, with the app's own payloads, against a *scratch copy* of the real database: discovery, login, tables, menu, the live socket, `order.create`, `order.save`, `order.kot`, the busy-table path, and that not one existing row changed. |
+| `tools/mobile_contract_test.py` — *in the parent till project, not in this repo* | **58 checks, 0 failed.** Every call the app makes, with the app's own payloads, against a *scratch copy* of the real database: discovery, login, tables, menu, the live socket, `order.create`, `order.save`, `order.kot`, the busy-table path, the full **take-it-back round trip** (a line at zero is kept, the ticket prints `−1`, then `−2`, then the line leaves the bill once the cooks have been told), and that not one existing row changed. |
 
 The first one ships with the app because it needs nothing but Python, so it
 runs before Gradle and fails in about a second with a message you can act on

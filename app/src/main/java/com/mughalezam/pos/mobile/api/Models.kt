@@ -34,9 +34,16 @@ data class MenuRow(
  * A line in the phone's cart.
  *
  * [lineId] is kept from the moment the line is born: saving the same line
- * twice updates it instead of adding a second copy.  [sentQty] is what the
- * kitchen already has - this app never lowers it, or the cooks would be left
- * with food the bill says was cancelled.
+ * twice updates it instead of adding a second copy.
+ *
+ * [sentQty] is what the kitchen already has, read from the server's own
+ * record - the phone uses it to decide what to show and what to refuse, but
+ * the server ignores whatever the phone sends back and stamps its own value,
+ * so a phone cannot quietly rewrite what the cooks were told.
+ *
+ * A line at qty 0 with sentQty above zero is FOOD THAT IS COOKING AND HAS
+ * BEEN TAKEN BACK. It stays on the bill on purpose, so the next kitchen
+ * ticket prints a minus and the cooks take it away.
  */
 data class CartLine(
     var lineId: String,
@@ -81,14 +88,29 @@ fun readCategories(state: JSONObject): List<String> {
     return out
 }
 
-fun readItems(state: JSONObject, category: String): List<MenuRow> {
+/**
+ * The dishes the waiter can see.
+ *
+ * [query] is the search box, and matches exactly what the till's own box
+ * matches - the name, the code or the category, any part of the word and in
+ * any letter case.  Matching the same three fields matters: a waiter who has
+ * learnt "ZNG" on the till must find the same dish here.
+ */
+fun readItems(state: JSONObject, category: String, query: String = ""): List<MenuRow> {
     val menu = state.optJSONObject("menu") ?: return emptyList()
     val arr = menu.optJSONArray("items") ?: return emptyList()
+    val term = query.trim().lowercase(Locale.ROOT)
     val out = ArrayList<MenuRow>()
     for (i in 0 until arr.length()) {
         val o = arr.optJSONObject(i) ?: continue
         if (!o.optBoolean("active", true)) continue
         if (category.isNotEmpty() && o.optString("cat") != category) continue
+        if (term.isNotEmpty()) {
+            val hit = o.optString("name").lowercase(Locale.ROOT).contains(term) ||
+                o.optString("code").lowercase(Locale.ROOT).contains(term) ||
+                o.optString("cat").lowercase(Locale.ROOT).contains(term)
+            if (!hit) continue
+        }
         out.add(
             MenuRow(
                 id = o.optString("id"),
@@ -179,9 +201,19 @@ fun cartCount(lines: List<CartLine>): Double {
     return sum
 }
 
-/** Anything still waiting to go to the kitchen. */
+/**
+ * Is there anything the kitchen has not been told about?
+ *
+ * Deliberately `!=` and NOT `>`: a line the waiter took back off the bill is
+ * sitting at qty 0 while the kitchen still has its 1, and that -1 has to
+ * reach the cooks or they will keep food nobody is paying for.  With `>` that
+ * line looks finished, the "Send to kitchen" button goes dead, and the removal
+ * never leaves the phone.
+ *
+ * The till's own KOT button asks the same question the same way.
+ */
 fun hasUnsent(lines: List<CartLine>): Boolean {
-    for (l in lines) if (l.qty > l.sentQty) return true
+    for (l in lines) if (l.qty != l.sentQty) return true
     return false
 }
 
