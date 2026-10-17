@@ -52,6 +52,14 @@
     <string name="order_removed_back_kot">Already removed - press + to put it back before the next KOT</string>
     <string name="order_send_first">Send the KOT first - the kitchen still has to be told (−%1$s)</string>
 
+    <!-- exact quantity: the answer to "4 ordered, I want 3" without tapping
+         minus four times, which ends at a confirmation and reads as though
+         it cancels the whole line -->
+    <string name="order_qty_for">Quantity of %1$s</string>
+    <string name="order_qty_title">Quantity for %1$s</string>
+    <string name="order_qty_hint">Type the quantity you want, e.g. 3</string>
+    <string name="order_qty_bad">Enter a number, for example 3 or 0.5</string>
+
     <!-- offline banner - the phone must never pretend a change was taken -->
     <string name="offline_banner">Main server PC is offline. Nothing is being saved.</string>
     <string name="offline_try">Try now</string>

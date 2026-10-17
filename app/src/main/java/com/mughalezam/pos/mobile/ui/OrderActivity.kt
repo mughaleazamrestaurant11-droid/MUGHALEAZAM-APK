@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.text.Editable
+import android.text.InputType
 import android.text.TextWatcher
 import android.view.View
 import android.widget.EditText
@@ -127,7 +128,8 @@ class OrderActivity : AppCompatActivity(), PosApi.Listener {
             cart,
             onPlus = { line -> changeQty(line, +1.0) },
             onMinus = { line -> changeQty(line, -1.0) },
-            onRemove = { line -> removeLine(line) }
+            onRemove = { line -> removeLine(line) },
+            onQty = { line -> askQty(line) }
         )
         cartList.layoutManager = LinearLayoutManager(this)
         cartList.adapter = cartAdapter
@@ -382,6 +384,48 @@ class OrderActivity : AppCompatActivity(), PosApi.Listener {
                 line.qty = 0.0
                 cartAdapter.submit(cart)
                 paintTotals()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    /**
+     * Type the exact quantity: "4 ordered, I want 3" in one step.
+     *
+     * Tapping - four times to take one off a four is slow, and the road ends
+     * at the removal confirmation, which reads as though it is cancelling all
+     * four rather than one. This goes straight to the number the waiter
+     * actually wants, then runs the SAME setQty the buttons use - so a zero
+     * still asks first if the kitchen already has the food.
+     */
+    private fun askQty(line: CartLine) {
+        val field = EditText(this)
+        field.inputType =
+            InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+        field.setText(qtyText(line.qty))
+        field.setSelection(field.text.length)
+        field.hint = getString(R.string.order_qty_hint)
+        field.setTextColor(resources.getColor(R.color.text, null))
+        field.setHintTextColor(resources.getColor(R.color.text_dim, null))
+        val pad = (20 * resources.displayMetrics.density).toInt()
+        field.setPadding(pad, pad / 2, pad, pad / 2)
+
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.order_qty_title, line.name))
+            .setView(field)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val raw = field.text.toString().trim().replace(',', '.')
+                val value = raw.toDoubleOrNull()
+                // An empty or half-typed box must NOT become zero. Clearing
+                // the box to retype is the normal way to edit, and reading it
+                // as a zero would delete the line - or ask to remove food the
+                // kitchen already has - which is the trap the till had too.
+                if (value == null || !value.isFinite() || value < 0) {
+                    Toast.makeText(this, R.string.order_qty_bad, Toast.LENGTH_SHORT)
+                        .show()
+                } else {
+                    setQty(line, value)
+                }
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()

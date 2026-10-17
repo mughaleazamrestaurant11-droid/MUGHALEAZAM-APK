@@ -62,11 +62,20 @@
         android:textColor="@color/text"
         android:textSize="19sp" />
 
+    <!-- The quantity, and the phone's answer to "I want 3, not 4".
+         Tap it and type the exact number instead of pressing - four times.
+         It is given a field's background and is clickable on purpose: a bare
+         label reads as read-only, which is exactly the complaint. -->
     <TextView
         android:id="@+id/lineQty"
-        android:layout_width="44dp"
+        android:layout_width="48dp"
         android:layout_height="wrap_content"
+        android:background="@drawable/field"
+        android:clickable="true"
+        android:focusable="true"
         android:gravity="center"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
         android:textColor="@color/gold"
         android:textSize="16sp"
         android:textStyle="bold" />

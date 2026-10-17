@@ -30,7 +30,8 @@ class CartAdapter(
     private var lines: List<CartLine>,
     private val onPlus: (CartLine) -> Unit,
     private val onMinus: (CartLine) -> Unit,
-    private val onRemove: (CartLine) -> Unit
+    private val onRemove: (CartLine) -> Unit,
+    private val onQty: (CartLine) -> Unit
 ) : RecyclerView.Adapter<CartAdapter.Holder>() {
 
     class Holder(view: View) : RecyclerView.ViewHolder(view) {
@@ -115,6 +116,9 @@ class CartAdapter(
         holder.plus.setOnClickListener { onPlus(line) }
         holder.minus.setOnClickListener { onMinus(line) }
         holder.remove.setOnClickListener { onRemove(line) }
+        // tapping the quantity opens the exact-quantity box
+        holder.qty.setOnClickListener { onQty(line) }
+        holder.qty.contentDescription = ctx.getString(R.string.order_qty_for, line.name)
     }
 
     private fun showNote(holder: Holder, text: String, colour: Int) {
