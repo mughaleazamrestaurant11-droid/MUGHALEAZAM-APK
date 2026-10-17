@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.MughalPos" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/gold</item>
+        <item name="colorOnPrimary">@color/on_gold</item>
+        <item name="colorPrimaryContainer">@color/gold_dim</item>
+        <item name="colorOnPrimaryContainer">@color/text</item>
+
+        <item name="colorSecondary">@color/gold</item>
+        <item name="colorOnSecondary">@color/on_gold</item>
+
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/text</item>
+        <item name="colorSurfaceVariant">@color/surface_2</item>
+        <item name="colorOnSurfaceVariant">@color/text_dim</item>
+
+        <item name="colorError">@color/red</item>
+        <item name="colorOnError">@color/white</item>
+
+        <item name="android:colorBackground">@color/bg</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="android:navigationBarColor">@color/bg</item>
+        <item name="android:textColorPrimary">@color/text</item>
+        <item name="android:textColorSecondary">@color/text_dim</item>
+    </style>
+
+    <!-- the red strip that appears when the main server PC goes off -->
+    <style name="OfflineBanner">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@color/red_deep</item>
+        <item name="android:padding">12dp</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:visibility">gone</item>
+    </style>
+</resources>

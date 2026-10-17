@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Royal gold on near-black, the same mood as the till's own screen. -->
+<resources>
+    <color name="bg">#141416</color>
+    <color name="surface">#1E1E23</color>
+    <color name="surface_2">#26262C</color>
+    <color name="line">#33333B</color>
+
+    <color name="gold">#C9A227</color>
+    <color name="gold_dim">#4A3C12</color>
+    <color name="on_gold">#141416</color>
+
+    <color name="text">#F4F4F6</color>
+    <color name="text_dim">#9D9DA5</color>
+
+    <color name="red">#FF5B4E</color>
+    <color name="red_deep">#8E1A11</color>
+    <color name="green">#2FBF71</color>
+    <color name="green_deep">#12351F</color>
+    <color name="white">#FFFFFF</color>
+</resources>

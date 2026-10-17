@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MUGHAL-E-AZAM</string>
+    <string name="app_sub">Waiter App</string>
+
+    <!-- server -->
+    <string name="server_title">Main server PC</string>
+    <string name="server_hint">Address, e.g. 192.168.10.50:8484</string>
+    <string name="server_find">Find on this Wi-Fi</string>
+    <string name="server_continue">Continue</string>
+    <string name="server_searching">Looking for the main server…</string>
+    <string name="server_none">No main server found on this Wi-Fi.</string>
+    <string name="server_found">Found %1$d main server(s).</string>
+    <string name="server_help">This phone is only a window onto the main PC.\nAll bills and stock live there.</string>
+
+    <!-- login -->
+    <string name="login_title">Who are you?</string>
+    <string name="login_user">User name</string>
+    <string name="login_pass">Password</string>
+    <string name="login_go">Sign in</string>
+    <string name="login_working">Signing in…</string>
+    <string name="login_again">Change server</string>
+
+    <!-- tables -->
+    <string name="tables_title">Tables</string>
+    <string name="tables_signed">Signed in as %1$s</string>
+    <string name="tables_busy">In use</string>
+    <string name="tables_free">Free</string>
+    <string name="tables_signout">Sign out</string>
+    <string name="tables_refresh">Refresh</string>
+
+    <!-- order -->
+    <string name="order_save">Save order</string>
+    <string name="order_kitchen">Send to kitchen</string>
+    <string name="order_empty">Tap an item to add it</string>
+    <string name="order_cart_empty">No items yet</string>
+    <string name="order_note">Note for the chef</string>
+
+    <!-- offline banner - the phone must never pretend a change was taken -->
+    <string name="offline_banner">Main server PC is offline. Nothing is being saved.</string>
+    <string name="offline_try">Try now</string>
+    <string name="link_live">LIVE</string>
+    <string name="link_offline">OFFLINE</string>
+</resources>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The whole app speaks to one machine: the main server PC, whose address is a
+  plain 192.168.x.x number on the shop's wi-fi router.  It is never https, so
+  cleartext has to be allowed.  Everything else stays blocked by Android's
+  default, so the phone still cannot be talked into reaching a hostile site.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

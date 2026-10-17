@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One main server found on this wi-fi. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/serverRow"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/card"
+    android:drawablePadding="8dp"
+    android:gravity="center_vertical"
+    android:padding="13dp"
+    android:textColor="@color/text"
+    android:textSize="14sp" />
